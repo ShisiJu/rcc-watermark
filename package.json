@@ -1,0 +1,26 @@
+{
+  "name": "rcc-watermark",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "dependencies": {},
+  "devDependencies": {
+    "babel-loader": "^8.1.0",
+    "core-js": "^3.6.5",
+    "webpack-cli": "^3.3.11",
+    "webpack": "^4.43.0"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ShisiJu/rcc-watermark.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ShisiJu/rcc-watermark/issues"
+  },
+  "homepage": "https://github.com/ShisiJu/rcc-watermark#readme"
+}
