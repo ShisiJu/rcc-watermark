@@ -1,1 +1,7 @@
+# 编辑器
+.vscode
+.idea
+# 本地文件
 node_modules
+dist
+tmp
