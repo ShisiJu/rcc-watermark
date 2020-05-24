@@ -12,8 +12,8 @@ let options = {
     canvasWidth: 300,
     canvasHeight: 200,
     canvasOffsetX: 10,
-    canvasOffsetY: 20,
-    unitOffsetX: 100,
+    canvasOffsetY: 80,
+    unitOffsetX: 400,
     unitOffsetY: 10,
     startX: 0.25, // 大于1的取px, 小于等于1的取比例
     startY: 20, // 大于1的取px, 小于等于1的取比例
@@ -54,7 +54,7 @@ class RccWatermark {
 
   initCanvasCtx(ctx, canvas) {
     const setting = this.getActualSetting()
-    canvas.width = setting.canvasHeight;
+    canvas.width = setting.canvasWidth;
     canvas.height = setting.canvasHeight;
     const rotate = setting.textRotate * Math.PI / 180;
     ctx.rotate(rotate);
@@ -110,8 +110,6 @@ class RccWatermark {
   }
 
 }
-
-
 
 RccWatermark.defaultSetting = options.setting;
 
