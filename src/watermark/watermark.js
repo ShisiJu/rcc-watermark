@@ -1,29 +1,29 @@
 import { isEmpty } from './util'
+import WatermarkContent from './watermark-content'
+import WatermarkDisplay from './watermark-display'
 
-// options 
-const DISPLAY = {
-  cross: 'cross',
-  line: 'line'
-}
 
 let options = {
   el: '.watermark',
   setting: {
-    display: DISPLAY.cross,
-    containerWidth: 0.2,  // 大于1的取px, 小于等于1的取比例
-    containerHeight: 120,
+    display: 'cross',
+    containerWidth: 1,  // 大于1的取px, 小于等于1的取比例
+    containerHeight: 1,
     canvasWidth: 300,
     canvasHeight: 200,
     canvasOffsetX: 10,
     canvasOffsetY: 20,
-    startX: 200, // 大于1的取px, 小于等于1的取比例
-    startY: 100, // 大于1的取px, 小于等于1的取比例
+    unitOffsetX: 100,
+    unitOffsetY: 10,
+    startX: 0.25, // 大于1的取px, 小于等于1的取比例
+    startY: 20, // 大于1的取px, 小于等于1的取比例
     // 旋转角度 顺时针为正
     textRotate: -20,
     // 透明度
     alpha: 0.1,
   },
-  content: [{ type: 'img', url: '/img/logo.png' }, '2020年', 'ID: steven.ju']
+  content: [{ type: 'img', url: '/img/logo.png', width: 200, height: 100 },
+    '2020年', 'ID: steven.ju']
 }
 
 class RccWatermark {
@@ -31,6 +31,7 @@ class RccWatermark {
   constructor(options = {}) {
     this.checkOptions(options)
     this.paramsSetting = options.setting
+    this.content = options.content
     this.el = options.el
   }
 
@@ -41,52 +42,60 @@ class RccWatermark {
   }
 
   addWatermark() {
-    // this.unit = this.initUnit()
-    // this.fullEl(this.unit)
-    let elements = document.querySelectorAll(this.el)
-    elements.forEach(elem => {
-      let rects =  elem.getClientRects()
-      console.log(rects)
+    this.initUnit().then(pDataURL => {
+      this.dataURL = pDataURL
+    }).then(() => {
+      let elements = document.querySelectorAll(this.el)
+      elements.forEach(elem => {
+        new WatermarkDisplay(elem, this.actualSetting, this.dataURL)
+      })
     })
+  }
+
+  initCanvasCtx(ctx, canvas) {
+    const setting = this.getActualSetting()
+    canvas.width = setting.canvasHeight;
+    canvas.height = setting.canvasHeight;
+    const rotate = setting.textRotate * Math.PI / 180;
+    ctx.rotate(rotate);
+    ctx.globalAlpha = setting.alpha;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.font = '18px Arial';
   }
 
   initUnit() {
     let canvas = RccWatermark.canvas
-    let ctx = canvas.getContext('2d');
-    let setting = this.getActualSetting()
-    canvas.width = canvasWidth;
-    canvas.height = canvasHeight;
+    let ctx = canvas.getContext('2d')
+    this.initCanvasCtx(ctx, canvas)
+    const setting = this.getActualSetting()
 
-    let rotate = settings.textRotate * Math.PI / 180;
-    ctx.rotate(rotate);
-    ctx.globalAlpha = 0.1;
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'top';
-    ctx.font = '18px Arial';
-    // ctx.drawImage(settings.pic, offset.x + 0, offset.y + 80, 80, 30);
-    // ctx.fillText('ID: ' + settings.username, offset.x + 0, offset.y + 125);
-    // ctx.fillText(settings.datetime, offset.x + 0, offset.y + 150);
+    let yDistance = 0
+    let promiseDraw = []
+    this.content.forEach((canvasContent, index) => {
+      let wmContent = new WatermarkContent(canvasContent)
 
-    let dataURL = canvas.toDataURL('image/png');
+      let paramSetting = {
+        x: setting.canvasOffsetX,
+        y: setting.canvasOffsetY + yDistance
+      }
+      yDistance += wmContent.height
+      let promisedDraw = new Promise(resolve => {
+        wmContent.draw(ctx, paramSetting).then(() => {
+          resolve()
+        })
+      })
 
+      promiseDraw.push(promisedDraw)
+    })
 
-  }
-
-
-  fullEl(unit) {
-    let top = 0
-    let left = 0
-    this.imgData = dataURL;
-    var imgElement = `<img src="${this.imgData} style='display:block;position:absolute; z-index:0; top: "`
-
-    "<img src='" + this.imgData + "' style='display:block;position:absolute; z-index:0; top:" +
-      (set.containerTop + y) + 'px; left:' + (set.containerLeft + x) + "px' />";
-
-    this.fillDOM.append(imgElement);
-  }
-  // 设置全局的默认参数
-  setDefaultSetting(pDefaultSetting) {
-    RccWatermark.defaultSetting = pDefaultSetting
+    return Promise.all(promiseDraw).then(() => {
+      console.log('toDataURL')
+      let dataURL = canvas.toDataURL('image/png')
+      return dataURL
+    }).catch(err => {
+      console.log(err)
+    })
   }
 
   // 获取全局默认参数
@@ -96,15 +105,27 @@ class RccWatermark {
 
   // 获取实际使用的参数 
   getActualSetting() {
-    return Object.assign({}, RccWatermark.defaultSetting, this.paramsSetting)
+    this.actualSetting = Object.assign({}, RccWatermark.defaultSetting, this.paramsSetting)
+    return this.actualSetting
   }
 
 }
 
 
 
-RccWatermark.defaultSetting = options
+RccWatermark.defaultSetting = options.setting;
 
+// 设置全局的默认参数
+RccWatermark.setDefaultSetting = (pDefaultSetting) => {
+  RccWatermark.defaultSetting = pDefaultSetting
+}
+
+// 获取全局默认参数
+RccWatermark.getDefaultSetting = () => {
+  return RccWatermark.defaultSetting
+}
+
+// 直接添加水印
 RccWatermark.directlyAdd = options => {
   new RccWatermark(options)
 }
@@ -112,13 +133,15 @@ RccWatermark.directlyAdd = options => {
 
 RccWatermark.canvas = null
 
-RccWatermark.initCanvas = function () {
+RccWatermark.initCanvas = () => {
   let canvas = document.createElement('canvas');
   canvas.style.display = 'none';
+  canvas.crossOrigin = '*';
   document.querySelector('body').append(canvas);
   RccWatermark.canvas = canvas;
 }
 
 RccWatermark.initCanvas()
+RccWatermark.setDefaultSetting(options.setting)
 
 export default RccWatermark
